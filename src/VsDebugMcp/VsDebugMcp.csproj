@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>false</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>VsDebugMcp</RootNamespace>
+    <AssemblyName>VsDebugMcp</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.15" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <COMReference Include="EnvDTE">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>0</VersionMinor>
+      <VersionMajor>8</VersionMajor>
+      <Guid>80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2</Guid>
+    </COMReference>
+    <COMReference Include="EnvDTE80">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>0</VersionMinor>
+      <VersionMajor>8</VersionMajor>
+      <Guid>1a31287a-4d7d-413e-8e32-3b374931bd89</Guid>
+    </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Content\debug_instructions.md" />
+    <EmbeddedResource Include="Resources\Content\troubleshooting_csharp.md" />
+    <EmbeddedResource Include="Resources\Content\troubleshooting_cpp.md" />
+    <EmbeddedResource Include="Resources\Content\troubleshooting_fsharp.md" />
+    <EmbeddedResource Include="Resources\Content\troubleshooting_vb.md" />
+  </ItemGroup>
+
+</Project>
