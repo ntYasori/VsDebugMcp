@@ -1,0 +1,35 @@
+VsDebugMcp - MCP Server para Debug no Visual Studio via Claude Code
+====================================================================
+
+COMO USAR:
+----------
+
+1. Extraia esta pasta em qualquer lugar (ex: C:\Tools\VsDebugMcp\)
+
+2. No terminal, registre no Claude Code:
+
+   claude mcp add --transport stdio vsdebugmcp -- "C:\Tools\VsDebugMcp\VsDebugMcp.exe"
+
+   Ou para apontar para uma instancia especifica do Visual Studio (por PID):
+
+   claude mcp add --transport stdio vsdebugmcp -- "C:\Tools\VsDebugMcp\VsDebugMcp.exe" --vs-pid 12345
+
+3. Abra um projeto no Visual Studio e use o Claude Code normalmente.
+   Ele tera acesso a 14 ferramentas de debug:
+
+   - start_debugging, stop_debugging, restart_debugging
+   - step_over, step_into, step_out, continue_execution
+   - add_breakpoint, remove_breakpoint, clear_all_breakpoints, list_breakpoints
+   - get_variables_values, evaluate_expression
+
+REQUISITOS:
+-----------
+- Windows 10/11
+- Visual Studio 2022 ou 2026 (com uma solucao aberta)
+- NAO precisa de .NET SDK instalado (executavel self-contained)
+
+DICAS:
+------
+- O Visual Studio precisa estar aberto com uma solucao carregada
+- Se tiver varias instancias do VS, use --vs-pid para especificar qual
+- Para descobrir o PID do VS: Gerenciador de Tarefas > Detalhes > devenv.exe

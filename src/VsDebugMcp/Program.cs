@@ -26,11 +26,15 @@ builder.Services.AddSingleton<IVsDebuggerService>(sp =>
         sp.GetRequiredService<ComThread>()));
 
 // Configure MCP server with stdio transport
+// Use generic registration to be trim-compatible
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
-    .WithToolsFromAssembly()
-    .WithResourcesFromAssembly();
+    .WithTools<VsDebugMcp.Tools.SessionTools>()
+    .WithTools<VsDebugMcp.Tools.ExecutionTools>()
+    .WithTools<VsDebugMcp.Tools.BreakpointTools>()
+    .WithTools<VsDebugMcp.Tools.InspectionTools>()
+    .WithResources<VsDebugMcp.Resources.DebugResources>();
 
 var app = builder.Build();
 
