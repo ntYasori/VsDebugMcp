@@ -9,17 +9,17 @@
 
 ## Building from Source
 
-Clone the repository and build:
+Clone the repository and publish:
 
 ```bash
 git clone <repository-url>
 cd VsDebugMcp
-dotnet build -c Release
+dotnet publish src/VsDebugMcp -c Release
 ```
 
-The output binary is located at:
+This produces a **single self-contained exe** (no .NET runtime required, no DLLs alongside). The output binary is located at:
 ```
-src/VsDebugMcp/bin/Release/net8.0-windows/VsDebugMcp.exe
+src/VsDebugMcp/bin/Release/net8.0-windows/win-x64/publish/VsDebugMcp.exe
 ```
 
 ## Registering with Claude Code
