@@ -25,6 +25,7 @@ public interface IVsDebuggerService
     // Inspection
     Task<string> GetVariablesAsync(int? depth = null);
     Task<string> EvaluateExpressionAsync(string expression);
+    Task<string> GetCallStackAsync();
 
     // State
     Task<DebugState> GetDebugStateAsync();

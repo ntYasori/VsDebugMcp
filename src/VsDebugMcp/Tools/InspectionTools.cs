@@ -22,4 +22,10 @@ public sealed class InspectionTools
     {
         return await debugger.EvaluateExpressionAsync(expression);
     }
+
+    [McpServerTool(Name = "get_call_stack"), Description("Get the current call stack showing all stack frames of the active thread.")]
+    public static async Task<string> GetCallStack(IVsDebuggerService debugger)
+    {
+        return await debugger.GetCallStackAsync();
+    }
 }

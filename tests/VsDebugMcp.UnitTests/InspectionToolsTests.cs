@@ -42,4 +42,16 @@ public class InspectionToolsTests
 
         result.Should().Contain("x + y = 15");
     }
+
+    [Fact]
+    public async Task GetCallStack_ShouldCallService()
+    {
+        _mockDebugger.Setup(d => d.GetCallStackAsync())
+            .ReturnsAsync("Call Stack (2 frames):\n  #0  MyClass.MyMethod() - MyApp.dll, line 42\n  #1  Program.Main(string[]) - MyApp.dll, line 10");
+
+        var result = await InspectionTools.GetCallStack(_mockDebugger.Object);
+
+        result.Should().Contain("Call Stack (2 frames)");
+        result.Should().Contain("MyClass.MyMethod()");
+    }
 }

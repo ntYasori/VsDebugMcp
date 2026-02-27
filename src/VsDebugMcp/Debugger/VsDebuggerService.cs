@@ -237,6 +237,48 @@ public sealed class VsDebuggerService : IVsDebuggerService
         });
     }
 
+    public async Task<string> GetCallStackAsync()
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                return "Cannot get call stack: debugger is not in break mode.";
+
+            var thread = dte.Debugger.CurrentThread;
+            if (thread is null)
+                return "No current thread available.";
+
+            var frames = thread.StackFrames;
+            var sb = new StringBuilder();
+            int count = 0;
+
+            foreach (StackFrame frame in frames)
+                count++;
+
+            sb.AppendLine($"Call Stack ({count} frame{(count != 1 ? "s" : "")}):");
+
+            int index = 0;
+            foreach (StackFrame frame in frames)
+            {
+                var module = frame.Module;
+                var functionName = frame.FunctionName;
+
+                if (string.IsNullOrEmpty(module) || module == "[External Code]")
+                {
+                    sb.AppendLine($"  #{index}  [External Code]");
+                }
+                else
+                {
+                    sb.AppendLine($"  #{index}  {functionName} - {module}");
+                }
+
+                index++;
+            }
+
+            return sb.ToString().TrimEnd();
+        });
+    }
+
     public async Task<DebugState> GetDebugStateAsync()
     {
         return await _connector.ExecuteOnDteAsync(dte =>
