@@ -26,4 +26,10 @@ public sealed class SessionTools
     {
         return await debugger.RestartDebuggingAsync();
     }
+
+    [McpServerTool(Name = "edit_and_continue"), Description("Apply code changes while debugging (Edit and Continue). Allows modifying code during a debug session without restarting. The debugger must be in break mode. Not all changes are supported (e.g. adding new classes or changing method signatures may require restart).")]
+    public static async Task<string> EditAndContinue(IVsDebuggerService debugger)
+    {
+        return await debugger.ApplyCodeChangesAsync();
+    }
 }

@@ -71,6 +71,26 @@ public sealed class VsDebuggerService : IVsDebuggerService
         });
     }
 
+    public async Task<string> ApplyCodeChangesAsync()
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                return "Cannot apply code changes: debugger must be in break mode.";
+
+            try
+            {
+                dte.ExecuteCommand("Debug.ApplyCodeChanges");
+                return "Edit and Continue: code changes applied successfully.";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to apply code changes: {ex.Message}. " +
+                       "Ensure Edit and Continue is enabled in VS settings and changes are compatible.";
+            }
+        });
+    }
+
     public async Task<string> StepOverAsync()
     {
         return await _connector.ExecuteOnDteAsync(dte =>

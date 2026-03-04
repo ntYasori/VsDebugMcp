@@ -9,6 +9,7 @@ public interface IVsDebuggerService
     Task<string> StartDebuggingAsync(string? configuration = null);
     Task<string> StopDebuggingAsync();
     Task<string> RestartDebuggingAsync();
+    Task<string> ApplyCodeChangesAsync();
 
     // Execution control
     Task<string> StepOverAsync();
