@@ -15,6 +15,8 @@ public interface IVsDebuggerService
     Task<string> StepIntoAsync();
     Task<string> StepOutAsync();
     Task<string> ContinueExecutionAsync();
+    Task<string> SetNextStatementAsync(int line);
+    Task<string> RunToCursorAsync(string filePath, int line);
 
     // Breakpoints
     Task<string> AddBreakpointAsync(string filePath, int line, string? condition = null);

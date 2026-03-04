@@ -119,6 +119,60 @@ public sealed class VsDebuggerService : IVsDebuggerService
         });
     }
 
+    public async Task<string> SetNextStatementAsync(int line)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                return "Cannot set next statement: debugger is not in break mode.";
+
+            try
+            {
+                var doc = dte.ActiveDocument;
+                if (doc is null)
+                    return "No active document.";
+
+                var sel = (EnvDTE.TextSelection)doc.Selection;
+                sel.GotoLine(line, false);
+                dte.Debugger.SetNextStatement();
+
+                return $"Next statement set to line {line} in {doc.FullName}.";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to set next statement to line {line}: {ex.Message}";
+            }
+        });
+    }
+
+    public async Task<string> RunToCursorAsync(string filePath, int line)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                return "Cannot run to cursor: debugger is not in break mode.";
+
+            try
+            {
+                var window = dte.ItemOperations.OpenFile(filePath);
+                var doc = dte.ActiveDocument;
+                if (doc is null)
+                    return $"Could not open file: {filePath}";
+
+                var sel = (EnvDTE.TextSelection)doc.Selection;
+                sel.GotoLine(line, false);
+
+                dte.Debugger.RunToCursor(false);
+
+                return $"Running to {filePath}:{line}...";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to run to cursor at {filePath}:{line}: {ex.Message}";
+            }
+        });
+    }
+
     public async Task<string> AddBreakpointAsync(string filePath, int line, string? condition = null)
     {
         return await _connector.ExecuteOnDteAsync(dte =>
