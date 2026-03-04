@@ -8,6 +8,7 @@ public sealed class VsDebuggerService : IVsDebuggerService
 {
     private readonly DteConnector _connector;
     private readonly ComThread _comThread;
+    private readonly List<string> _watchExpressions = new();
 
     public VsDebuggerService(DteConnector connector, ComThread comThread)
     {
@@ -237,6 +238,26 @@ public sealed class VsDebuggerService : IVsDebuggerService
         });
     }
 
+    public async Task<string> EvaluateMultipleExpressionsAsync(string[] expressions)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                return "Cannot evaluate: debugger is not in break mode.";
+
+            var sb = new StringBuilder();
+            foreach (var expression in expressions)
+            {
+                var result = dte.Debugger.GetExpression(expression, false, 500);
+                if (!result.IsValidValue)
+                    sb.AppendLine($"{expression} => Error: {result.Value}");
+                else
+                    sb.AppendLine($"{expression} = {result.Value} ({result.Type})");
+            }
+            return sb.ToString().TrimEnd();
+        });
+    }
+
     public async Task<string> GetCallStackAsync()
     {
         return await _connector.ExecuteOnDteAsync(dte =>
@@ -274,6 +295,39 @@ public sealed class VsDebuggerService : IVsDebuggerService
 
                 index++;
             }
+
+            return sb.ToString().TrimEnd();
+        });
+    }
+
+    public async Task<string> GetCurrentLocationAsync()
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                return "Cannot get location: debugger is not in break mode.";
+
+            var frame = dte.Debugger.CurrentStackFrame;
+            if (frame is null)
+                return "No current stack frame available.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"Function: {frame.FunctionName}");
+            sb.AppendLine($"Module: {frame.Module}");
+
+            try
+            {
+                var doc = dte.ActiveDocument;
+                if (doc is not null)
+                {
+                    sb.AppendLine($"File: {doc.FullName}");
+                    if (doc.Selection is EnvDTE.TextSelection sel)
+                        sb.AppendLine($"Line: {sel.CurrentLine}");
+                }
+            }
+            catch { /* Document info not always available */ }
+
+            sb.AppendLine($"Language: {frame.Language}");
 
             return sb.ToString().TrimEnd();
         });
@@ -350,6 +404,53 @@ public sealed class VsDebuggerService : IVsDebuggerService
                 FormatExpressions(expr.DataMembers, sb, indent + 1, maxDepth);
             }
         }
+    }
+
+    public Task<string> AddWatchAsync(string expression)
+    {
+        if (_watchExpressions.Contains(expression))
+            return Task.FromResult($"Watch '{expression}' already exists.");
+
+        _watchExpressions.Add(expression);
+        return Task.FromResult($"Watch added: {expression} ({_watchExpressions.Count} total)");
+    }
+
+    public Task<string> RemoveWatchAsync(string expression)
+    {
+        if (!_watchExpressions.Remove(expression))
+            return Task.FromResult($"Watch '{expression}' not found.");
+
+        return Task.FromResult($"Watch removed: {expression} ({_watchExpressions.Count} remaining)");
+    }
+
+    public async Task<string> ListWatchesAsync()
+    {
+        if (_watchExpressions.Count == 0)
+            return "No watch expressions set. Use manage_watch with action 'add' to add one.";
+
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine($"{_watchExpressions.Count} watch(es) (not in break mode, values unavailable):");
+                foreach (var expr in _watchExpressions)
+                    sb.AppendLine($"  - {expr}");
+                return sb.ToString().TrimEnd();
+            }
+
+            var resultSb = new StringBuilder();
+            resultSb.AppendLine($"{_watchExpressions.Count} watch(es):");
+            foreach (var expr in _watchExpressions)
+            {
+                var result = dte.Debugger.GetExpression(expr, false, 500);
+                if (!result.IsValidValue)
+                    resultSb.AppendLine($"  {expr} => Error: {result.Value}");
+                else
+                    resultSb.AppendLine($"  {expr} = {result.Value} ({result.Type})");
+            }
+            return resultSb.ToString().TrimEnd();
+        });
     }
 
     private static string? GetActiveProjectName(DTE dte)

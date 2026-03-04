@@ -26,6 +26,13 @@ public interface IVsDebuggerService
     Task<string> GetVariablesAsync(int? depth = null);
     Task<string> EvaluateExpressionAsync(string expression);
     Task<string> GetCallStackAsync();
+    Task<string> EvaluateMultipleExpressionsAsync(string[] expressions);
+    Task<string> GetCurrentLocationAsync();
+
+    // Watch management
+    Task<string> AddWatchAsync(string expression);
+    Task<string> RemoveWatchAsync(string expression);
+    Task<string> ListWatchesAsync();
 
     // State
     Task<DebugState> GetDebugStateAsync();
