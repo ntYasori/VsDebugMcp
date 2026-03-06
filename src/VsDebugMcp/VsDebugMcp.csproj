@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>VsDebugMcp</RootNamespace>
     <AssemblyName>VsDebugMcp</AssemblyName>
+    <Version>0.3.0</Version>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
