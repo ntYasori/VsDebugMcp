@@ -15,7 +15,7 @@ public sealed class InspectionTools
         return await debugger.GetVariablesAsync(depth);
     }
 
-    [McpServerTool(Name = "evaluate_expression"), Description("Evaluate an expression in the context of the current stack frame.")]
+    [McpServerTool(Name = "evaluate_expression"), Description("Evaluate a SINGLE expression in the context of the current stack frame. IMPORTANT: If you need to evaluate more than one expression, use the 'evaluate_multiple' tool instead — it evaluates all expressions in a single call, avoiding errors from parallel calls.")]
     public static async Task<string> EvaluateExpression(
         IVsDebuggerService debugger,
         [Description("The expression to evaluate (e.g. 'myVariable.Count', 'x + y', 'DateTime.Now').")] string expression)
@@ -29,7 +29,7 @@ public sealed class InspectionTools
         return await debugger.GetCallStackAsync();
     }
 
-    [McpServerTool(Name = "evaluate_multiple"), Description("Evaluate multiple expressions at once in the current stack frame. More efficient than calling evaluate_expression multiple times.")]
+    [McpServerTool(Name = "evaluate_multiple"), Description("Evaluate multiple expressions at once in the current stack frame. ALWAYS prefer this tool over calling evaluate_expression multiple times — it is more reliable (avoids errors from parallel calls) and more efficient (single round-trip). Errors in individual expressions do not affect the others.")]
     public static async Task<string> EvaluateMultiple(
         IVsDebuggerService debugger,
         [Description("Array of expressions to evaluate (e.g. ['myVar', 'x + y', 'obj.Property']).")] string[] expressions)

@@ -298,18 +298,25 @@ public sealed class VsDebuggerService : IVsDebuggerService
 
     public async Task<string> EvaluateExpressionAsync(string expression)
     {
-        return await _connector.ExecuteOnDteAsync(dte =>
+        try
         {
-            if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
-                return "Cannot evaluate: debugger is not in break mode.";
+            return await _connector.ExecuteOnDteAsync(dte =>
+            {
+                if (dte.Debugger.CurrentMode != dbgDebugMode.dbgBreakMode)
+                    return "Cannot evaluate: debugger is not in break mode.";
 
-            var result = dte.Debugger.GetExpression(expression, false, 500);
+                var result = dte.Debugger.GetExpression(expression, false, 500);
 
-            if (!result.IsValidValue)
-                return $"Error evaluating '{expression}': {result.Value}";
+                if (!result.IsValidValue)
+                    return $"Error evaluating '{expression}': {result.Value}";
 
-            return $"{expression} = {result.Value} ({result.Type})";
-        });
+                return $"{expression} = {result.Value} ({result.Type})";
+            });
+        }
+        catch (Exception ex)
+        {
+            return $"Error evaluating '{expression}': {ex.Message}. Tip: Use 'evaluate_multiple' tool to evaluate several expressions in a single call — it is more reliable and efficient.";
+        }
     }
 
     public async Task<string> EvaluateMultipleExpressionsAsync(string[] expressions)
