@@ -10,12 +10,12 @@ public sealed class InspectionTools
     [McpServerTool(Name = "get_variables_values"), Description("Get the values of all local variables and arguments in the current stack frame.")]
     public static async Task<string> GetVariablesValues(
         IVsDebuggerService debugger,
-        [Description("Maximum depth for expanding complex objects (default: 1).")] int? depth = null)
+        [Description("Maximum depth for expanding complex objects (default: 1, max: 5).")] int? depth = null)
     {
         return await debugger.GetVariablesAsync(depth);
     }
 
-    [McpServerTool(Name = "evaluate_expression"), Description("Evaluate a SINGLE expression in the context of the current stack frame. IMPORTANT: If you need to evaluate more than one expression, use the 'evaluate_multiple' tool instead — it evaluates all expressions in a single call, avoiding errors from parallel calls.")]
+    [McpServerTool(Name = "evaluate_expression"), Description("Evaluate a SINGLE expression in the context of the current stack frame (e.g. 'myVariable.Count', 'x + y', 'DateTime.Now'). IMPORTANT: If you need to evaluate more than one expression, use the 'evaluate_multiple' tool instead — it evaluates all expressions in a single call, avoiding errors from parallel calls.")]
     public static async Task<string> EvaluateExpression(
         IVsDebuggerService debugger,
         [Description("The expression to evaluate (e.g. 'myVariable.Count', 'x + y', 'DateTime.Now').")] string expression)
@@ -43,19 +43,51 @@ public sealed class InspectionTools
         return await debugger.GetCurrentLocationAsync();
     }
 
-    [McpServerTool(Name = "manage_watch"), Description("Manage persistent watch expressions. Add/remove watches that persist across debug steps. Use 'list' to evaluate all watches at once.")]
-    public static async Task<string> ManageWatch(
-        IVsDebuggerService debugger,
-        [Description("Action to perform: 'add', 'remove', or 'list'.")] string action,
-        [Description("The expression to watch (required for 'add' and 'remove').")] string? expression = null)
+    [McpServerTool(Name = "get_exception_info"), Description("Get details about the current exception being debugged, including type, message, stack trace, and inner exception. Only works when stopped at an exception or in a catch block.")]
+    public static async Task<string> GetExceptionInfo(IVsDebuggerService debugger)
     {
-        return action.ToLowerInvariant() switch
-        {
-            "add" when expression is not null => await debugger.AddWatchAsync(expression),
-            "remove" when expression is not null => await debugger.RemoveWatchAsync(expression),
-            "list" => await debugger.ListWatchesAsync(),
-            "add" or "remove" => "Expression is required for 'add' and 'remove' actions.",
-            _ => "Invalid action. Use 'add', 'remove', or 'list'."
-        };
+        return await debugger.GetExceptionInfoAsync();
+    }
+
+    [McpServerTool(Name = "get_threads"), Description("List all threads in the current debug process, showing thread ID, name, and state. Marks the current active thread.")]
+    public static async Task<string> GetThreads(IVsDebuggerService debugger)
+    {
+        return await debugger.GetThreadsAsync();
+    }
+
+    [McpServerTool(Name = "switch_stack_frame"), Description("Switch to a different stack frame to inspect variables and state at that level. Use get_call_stack first to see available frames and their indices.")]
+    public static async Task<string> SwitchStackFrame(
+        IVsDebuggerService debugger,
+        [Description("Zero-based index of the stack frame to switch to (0 = top/current frame).")] int frameIndex)
+    {
+        return await debugger.SwitchStackFrameAsync(frameIndex);
+    }
+
+    [McpServerTool(Name = "get_output"), Description("Read the Visual Studio Debug Output window contents. Shows debug logs, console output, and diagnostic messages. Limited to the last 100 lines.")]
+    public static async Task<string> GetOutput(IVsDebuggerService debugger)
+    {
+        return await debugger.GetOutputAsync();
+    }
+
+    [McpServerTool(Name = "add_watch"), Description("Add a persistent watch expression that will be evaluated on each debug step. Use list_watches to see current values.")]
+    public static async Task<string> AddWatch(
+        IVsDebuggerService debugger,
+        [Description("The expression to watch (e.g. 'myVar.Count', 'x + y').")] string expression)
+    {
+        return await debugger.AddWatchAsync(expression);
+    }
+
+    [McpServerTool(Name = "remove_watch"), Description("Remove a previously added watch expression.")]
+    public static async Task<string> RemoveWatch(
+        IVsDebuggerService debugger,
+        [Description("The watch expression to remove.")] string expression)
+    {
+        return await debugger.RemoveWatchAsync(expression);
+    }
+
+    [McpServerTool(Name = "list_watches"), Description("List all watch expressions and their current values. If in break mode, evaluates each expression and shows the result.")]
+    public static async Task<string> ListWatches(IVsDebuggerService debugger)
+    {
+        return await debugger.ListWatchesAsync();
     }
 }

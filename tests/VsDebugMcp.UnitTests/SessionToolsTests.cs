@@ -1,4 +1,5 @@
 using FluentAssertions;
+using ModelContextProtocol.Server;
 using Moq;
 using VsDebugMcp.Debugger;
 using VsDebugMcp.Tools;
@@ -16,7 +17,7 @@ public class SessionToolsTests
         _mockDebugger.Setup(d => d.StartDebuggingAsync(null))
             .ReturnsAsync("Debugging started.");
 
-        var result = await SessionTools.StartDebugging(_mockDebugger.Object);
+        var result = await SessionTools.StartDebugging(null!, _mockDebugger.Object);
 
         result.Should().Be("Debugging started.");
         _mockDebugger.Verify(d => d.StartDebuggingAsync(null), Times.Once);
@@ -28,7 +29,7 @@ public class SessionToolsTests
         _mockDebugger.Setup(d => d.StartDebuggingAsync("Release"))
             .ReturnsAsync("Debugging started in Release.");
 
-        var result = await SessionTools.StartDebugging(_mockDebugger.Object, "Release");
+        var result = await SessionTools.StartDebugging(null!, _mockDebugger.Object, "Release");
 
         result.Should().Be("Debugging started in Release.");
         _mockDebugger.Verify(d => d.StartDebuggingAsync("Release"), Times.Once);
@@ -54,5 +55,38 @@ public class SessionToolsTests
         var result = await SessionTools.RestartDebugging(_mockDebugger.Object);
 
         result.Should().Be("Debugging restarted.");
+    }
+
+    [Fact]
+    public async Task EditAndContinue_ShouldCallService()
+    {
+        _mockDebugger.Setup(d => d.ApplyCodeChangesAsync())
+            .ReturnsAsync("Edit and Continue: code changes applied successfully.");
+
+        var result = await SessionTools.EditAndContinue(null!, _mockDebugger.Object);
+
+        result.Should().Contain("code changes applied");
+    }
+
+    [Fact]
+    public async Task GetDebugState_ShouldReturnFormattedState()
+    {
+        _mockDebugger.Setup(d => d.GetDebugStateAsync())
+            .ReturnsAsync(new DebugState
+            {
+                IsDebugging = true,
+                Mode = "Break",
+                SolutionName = "TestSolution",
+                BreakpointCount = 3,
+                CurrentFunction = "Main",
+                CurrentFile = "Program.cs",
+                CurrentLine = 10
+            });
+
+        var result = await SessionTools.GetDebugState(_mockDebugger.Object);
+
+        result.Should().Contain("Mode: Break");
+        result.Should().Contain("Breakpoints: 3");
+        result.Should().Contain("Function: Main");
     }
 }

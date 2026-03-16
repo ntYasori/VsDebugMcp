@@ -17,9 +17,6 @@ public sealed class DteConnector
 
     public bool IsConnected => _isConnected;
 
-    public object Dte => _dte ?? throw new InvalidOperationException(
-        "Not connected to Visual Studio. Call ConnectAsync() first.");
-
     public async Task ConnectAsync()
     {
         _dte = await _comThread.RunAsync(() =>
@@ -63,7 +60,7 @@ public sealed class DteConnector
                 });
                 return;
             }
-            catch (COMException)
+            catch (Exception)
             {
                 _isConnected = false;
             }

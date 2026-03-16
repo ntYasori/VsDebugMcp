@@ -49,7 +49,7 @@ public class BreakpointToolsTests
         _mockDebugger.Setup(d => d.ClearAllBreakpointsAsync())
             .ReturnsAsync("Cleared 5 breakpoint(s).");
 
-        var result = await BreakpointTools.ClearAllBreakpoints(_mockDebugger.Object);
+        var result = await BreakpointTools.ClearAllBreakpoints(null!, _mockDebugger.Object);
 
         result.Should().Contain("Cleared");
     }
@@ -63,5 +63,16 @@ public class BreakpointToolsTests
         var result = await BreakpointTools.ListBreakpoints(_mockDebugger.Object);
 
         result.Should().Contain("2 breakpoint(s)");
+    }
+
+    [Fact]
+    public async Task ToggleBreakpoint_ShouldCallService()
+    {
+        _mockDebugger.Setup(d => d.ToggleBreakpointAsync("test.cs", 10))
+            .ReturnsAsync("Breakpoint at test.cs:10 is now disabled.");
+
+        var result = await BreakpointTools.ToggleBreakpoint(_mockDebugger.Object, "test.cs", 10);
+
+        result.Should().Contain("disabled");
     }
 }

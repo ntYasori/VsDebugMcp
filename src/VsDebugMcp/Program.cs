@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using VsDebugMcp;
 using VsDebugMcp.Debugger;
 using VsDebugMcp.Interop;
@@ -23,10 +24,9 @@ builder.Services.AddSingleton(sp => new DteConnector(sp.GetRequiredService<ComTh
 builder.Services.AddSingleton<IVsDebuggerService>(sp =>
     new VsDebuggerService(
         sp.GetRequiredService<DteConnector>(),
-        sp.GetRequiredService<ComThread>()));
+        sp.GetRequiredService<ILogger<VsDebuggerService>>()));
 
 // Configure MCP server with stdio transport
-// Use generic registration to be trim-compatible
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()

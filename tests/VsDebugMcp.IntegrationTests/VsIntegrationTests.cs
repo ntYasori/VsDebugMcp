@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using VsDebugMcp.Debugger;
 using VsDebugMcp.Interop;
 using Xunit;
@@ -16,7 +17,7 @@ public class VsIntegrationTests : IDisposable
     {
         _comThread = new ComThread();
         _connector = new DteConnector(_comThread);
-        _debugger = new VsDebuggerService(_connector, _comThread);
+        _debugger = new VsDebuggerService(_connector, NullLogger<VsDebuggerService>.Instance);
     }
 
     [Fact]

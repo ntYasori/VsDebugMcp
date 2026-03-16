@@ -21,9 +21,11 @@ public interface IVsDebuggerService
 
     // Breakpoints
     Task<string> AddBreakpointAsync(string filePath, int line, string? condition = null);
+    Task<string> AddBreakpointsBatchAsync(BreakpointRequest[] breakpoints);
     Task<string> RemoveBreakpointAsync(string filePath, int line);
     Task<string> ClearAllBreakpointsAsync();
     Task<string> ListBreakpointsAsync();
+    Task<string> ToggleBreakpointAsync(string filePath, int line);
 
     // Inspection
     Task<string> GetVariablesAsync(int? depth = null);
@@ -31,6 +33,10 @@ public interface IVsDebuggerService
     Task<string> GetCallStackAsync();
     Task<string> EvaluateMultipleExpressionsAsync(string[] expressions);
     Task<string> GetCurrentLocationAsync();
+    Task<string> GetExceptionInfoAsync();
+    Task<string> GetThreadsAsync();
+    Task<string> SwitchStackFrameAsync(int frameIndex);
+    Task<string> GetOutputAsync();
 
     // Watch management
     Task<string> AddWatchAsync(string expression);
@@ -39,5 +45,7 @@ public interface IVsDebuggerService
 
     // State
     Task<DebugState> GetDebugStateAsync();
+    Task<string> ListConfigurationsAsync();
+    Task<string[]> GetConfigurationNamesAsync();
     bool IsConnected { get; }
 }

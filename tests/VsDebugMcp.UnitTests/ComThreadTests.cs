@@ -8,13 +8,6 @@ public class ComThreadTests : IDisposable
     private readonly ComThread _sut = new();
 
     [Fact]
-    public void Run_ShouldExecuteWorkAndReturnResult()
-    {
-        var result = _sut.Run(() => 42);
-        result.Should().Be(42);
-    }
-
-    [Fact]
     public async Task RunAsync_ShouldExecuteWorkAndReturnResult()
     {
         var result = await _sut.RunAsync(() => "hello");
@@ -22,25 +15,25 @@ public class ComThreadTests : IDisposable
     }
 
     [Fact]
-    public void Run_ShouldExecuteOnStaThread()
+    public async Task RunAsync_ShouldExecuteOnStaThread()
     {
-        var apartmentState = _sut.Run(() => Thread.CurrentThread.GetApartmentState());
+        var apartmentState = await _sut.RunAsync(() => Thread.CurrentThread.GetApartmentState());
         apartmentState.Should().Be(ApartmentState.STA);
     }
 
     [Fact]
-    public void Run_ShouldPropagateExceptions()
+    public async Task RunAsync_ShouldPropagateExceptions()
     {
-        var act = () => _sut.Run<int>(() => throw new InvalidOperationException("test error"));
-        act.Should().Throw<InvalidOperationException>().WithMessage("test error");
+        var act = () => _sut.RunAsync<int>(() => throw new InvalidOperationException("test error"));
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("test error");
     }
 
     [Fact]
-    public void Run_AfterDispose_ShouldThrow()
+    public async Task RunAsync_AfterDispose_ShouldThrow()
     {
         _sut.Dispose();
-        var act = () => _sut.Run(() => 1);
-        act.Should().Throw<ObjectDisposedException>();
+        var act = () => _sut.RunAsync(() => 1);
+        await act.Should().ThrowAsync<ObjectDisposedException>();
     }
 
     [Fact]

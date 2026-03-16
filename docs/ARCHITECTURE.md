@@ -181,16 +181,16 @@ VsDebugMcp/
         IVsDebuggerService.cs             -- Debug service abstraction
         VsDebuggerService.cs              -- EnvDTE-based implementation
         DebugState.cs                     -- Immutable debug state record
-        DebugStatePoller.cs               -- Background state monitoring
+        BreakpointRequest.cs              -- Record for batch breakpoint operations
       Interop/
         DteConnector.cs                   -- DTE connection management
         RotHelper.cs                      -- Running Object Table enumeration
         NativeMethods.cs                  -- P/Invoke for ROT and COM APIs
       Tools/
-        SessionTools.cs                   -- start/stop/restart debugging
-        ExecutionTools.cs                 -- step over/into/out, continue
-        BreakpointTools.cs                -- add/remove/list breakpoints
-        InspectionTools.cs                -- variables and expressions
+        SessionTools.cs                   -- start/stop/restart, debug state, configurations (with elicitation)
+        ExecutionTools.cs                 -- step over/into/out, continue, set next statement, run to cursor
+        BreakpointTools.cs                -- add/remove/toggle/list/batch breakpoints (with elicitation)
+        InspectionTools.cs                -- variables, expressions, call stack, threads, exceptions, output, watches
       Resources/
         DebugResources.cs                 -- MCP resource type definitions
         Content/
