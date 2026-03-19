@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>VsDebugMcp</RootNamespace>
     <AssemblyName>VsDebugMcp</AssemblyName>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -16,6 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="envdte90" Version="17.14.40260" />
     <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
   </ItemGroup>

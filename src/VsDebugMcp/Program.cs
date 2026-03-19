@@ -49,6 +49,8 @@ builder.Services.AddSingleton<ISessionDebugService, SessionDebugService>();
 builder.Services.AddSingleton<IBreakpointDebugService, BreakpointDebugService>();
 builder.Services.AddSingleton<IExecutionDebugService, ExecutionDebugService>();
 builder.Services.AddSingleton<IInspectionDebugService, InspectionDebugService>();
+builder.Services.AddSingleton<IProcessDebugService, ProcessDebugService>();
+builder.Services.AddSingleton<IExceptionDebugService, ExceptionDebugService>();
 
 // Configure MCP server with stdio transport
 builder.Services
@@ -58,6 +60,8 @@ builder.Services
     .WithTools<VsDebugMcp.Tools.ExecutionTools>()
     .WithTools<VsDebugMcp.Tools.BreakpointTools>()
     .WithTools<VsDebugMcp.Tools.InspectionTools>()
+    .WithTools<VsDebugMcp.Tools.ProcessTools>()
+    .WithTools<VsDebugMcp.Tools.ExceptionTools>()
     .WithResources<VsDebugMcp.Resources.DebugResources>();
 
 var app = builder.Build();
