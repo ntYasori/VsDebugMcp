@@ -1,11 +1,12 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace VsDebugMcp.UnitTests;
 
 public class ComThreadTests : IDisposable
 {
-    private readonly ComThread _sut = new();
+    private readonly ComThread _sut = new(NullLogger<ComThread>.Instance);
 
     [Fact]
     public async Task RunAsync_ShouldExecuteWorkAndReturnResult()
@@ -45,6 +46,21 @@ public class ComThreadTests : IDisposable
 
         var results = await Task.WhenAll(tasks);
         results.Should().BeEquivalentTo(Enumerable.Range(0, 10).Select(i => i * 2));
+    }
+
+    [Fact]
+    public async Task RunAsync_WithCancellation_ShouldRespectToken()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var act = () => _sut.RunAsync(() =>
+        {
+            Thread.Sleep(5000);
+            return 1;
+        }, cts.Token);
+
+        await act.Should().ThrowAsync<TimeoutException>();
     }
 
     public void Dispose() => _sut.Dispose();

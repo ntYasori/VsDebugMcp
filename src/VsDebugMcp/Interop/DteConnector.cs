@@ -1,18 +1,22 @@
-using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 
 namespace VsDebugMcp.Interop;
 
 public sealed class DteConnector
 {
     private readonly ComThread _comThread;
+    private readonly IRotHelper _rotHelper;
+    private readonly ILogger<DteConnector> _logger;
     private readonly int? _targetPid;
     private object? _dte;
     private bool _isConnected;
     private int? _connectedPid;
 
-    public DteConnector(ComThread comThread, int? targetPid = null)
+    public DteConnector(ComThread comThread, IRotHelper rotHelper, ILogger<DteConnector> logger, int? targetPid = null)
     {
         _comThread = comThread;
+        _rotHelper = rotHelper;
+        _logger = logger;
         _targetPid = targetPid;
     }
 
@@ -21,11 +25,13 @@ public sealed class DteConnector
 
     public async Task ConnectAsync()
     {
+        _logger.LogDebug("Connecting to Visual Studio{Pid}", _targetPid.HasValue ? $" (PID {_targetPid})" : "");
+
         (object dte, int pid) = await _comThread.RunAsync(() =>
         {
             if (_targetPid.HasValue)
             {
-                var obj = RotHelper.GetDteByPid(_targetPid.Value);
+                var obj = _rotHelper.GetDteByPid(_targetPid.Value);
                 if (obj is null)
                     throw new InvalidOperationException(
                         $"Could not find Visual Studio instance with PID {_targetPid.Value}. " +
@@ -36,7 +42,7 @@ public sealed class DteConnector
             }
             else
             {
-                var instance = RotHelper.GetFirstDteInstance();
+                var instance = _rotHelper.GetFirstDteInstance();
                 if (instance is null)
                     throw new InvalidOperationException(
                         "Could not find any running Visual Studio instance. " +
@@ -50,13 +56,16 @@ public sealed class DteConnector
         _dte = dte;
         _connectedPid = pid;
         _isConnected = true;
+        _logger.LogInformation("Connected to Visual Studio (PID {Pid})", pid);
     }
 
     public async Task SwitchAsync(int pid)
     {
+        _logger.LogDebug("Switching to Visual Studio PID {Pid}", pid);
+
         _dte = await _comThread.RunAsync(() =>
         {
-            var dte = RotHelper.GetDteByPid(pid);
+            var dte = _rotHelper.GetDteByPid(pid);
             if (dte is null)
                 throw new InvalidOperationException(
                     $"Could not find Visual Studio instance with PID {pid}. " +
@@ -67,13 +76,14 @@ public sealed class DteConnector
         });
         _connectedPid = pid;
         _isConnected = true;
+        _logger.LogInformation("Switched to Visual Studio (PID {Pid})", pid);
     }
 
     public async Task<List<VsInstanceInfo>> ListInstancesAsync()
     {
         return await _comThread.RunAsync(() =>
         {
-            var instances = RotHelper.GetRunningDteInstances();
+            var instances = _rotHelper.GetRunningDteInstances();
             return instances.Select(i =>
             {
                 string? solutionName = null;
@@ -87,7 +97,10 @@ public sealed class DteConnector
                         : Path.GetFileNameWithoutExtension(slnPath);
                     windowTitle = dte.MainWindow?.Caption;
                 }
-                catch { /* VS may be busy or showing a modal dialog */ }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not read details for VS instance PID {Pid}", i.ProcessId);
+                }
 
                 return new VsInstanceInfo(
                     i.ProcessId, i.Version,
@@ -101,7 +114,6 @@ public sealed class DteConnector
     {
         if (_isConnected)
         {
-            // Verify connection is still alive
             try
             {
                 await _comThread.RunAsync(() =>
@@ -112,8 +124,9 @@ public sealed class DteConnector
                 });
                 return;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Lost connection to Visual Studio, attempting reconnection");
                 _isConnected = false;
             }
         }

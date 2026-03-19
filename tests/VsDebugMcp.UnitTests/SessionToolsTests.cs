@@ -9,39 +9,39 @@ namespace VsDebugMcp.UnitTests;
 
 public class SessionToolsTests
 {
-    private readonly Mock<IVsDebuggerService> _mockDebugger = new();
+    private readonly Mock<ISessionDebugService> _mockSession = new();
 
     [Fact]
     public async Task StartDebugging_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.StartDebuggingAsync(null))
+        _mockSession.Setup(d => d.StartDebuggingAsync(null))
             .ReturnsAsync("Debugging started.");
 
-        var result = await SessionTools.StartDebugging(null!, _mockDebugger.Object);
+        var result = await SessionTools.StartDebugging(null!, _mockSession.Object);
 
         result.Should().Be("Debugging started.");
-        _mockDebugger.Verify(d => d.StartDebuggingAsync(null), Times.Once);
+        _mockSession.Verify(d => d.StartDebuggingAsync(null), Times.Once);
     }
 
     [Fact]
     public async Task StartDebugging_WithConfiguration_ShouldPassConfiguration()
     {
-        _mockDebugger.Setup(d => d.StartDebuggingAsync("Release"))
+        _mockSession.Setup(d => d.StartDebuggingAsync("Release"))
             .ReturnsAsync("Debugging started in Release.");
 
-        var result = await SessionTools.StartDebugging(null!, _mockDebugger.Object, "Release");
+        var result = await SessionTools.StartDebugging(null!, _mockSession.Object, "Release");
 
         result.Should().Be("Debugging started in Release.");
-        _mockDebugger.Verify(d => d.StartDebuggingAsync("Release"), Times.Once);
+        _mockSession.Verify(d => d.StartDebuggingAsync("Release"), Times.Once);
     }
 
     [Fact]
     public async Task StopDebugging_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.StopDebuggingAsync())
+        _mockSession.Setup(d => d.StopDebuggingAsync())
             .ReturnsAsync("Debugging stopped.");
 
-        var result = await SessionTools.StopDebugging(_mockDebugger.Object);
+        var result = await SessionTools.StopDebugging(_mockSession.Object);
 
         result.Should().Be("Debugging stopped.");
     }
@@ -49,10 +49,10 @@ public class SessionToolsTests
     [Fact]
     public async Task RestartDebugging_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.RestartDebuggingAsync())
+        _mockSession.Setup(d => d.RestartDebuggingAsync())
             .ReturnsAsync("Debugging restarted.");
 
-        var result = await SessionTools.RestartDebugging(_mockDebugger.Object);
+        var result = await SessionTools.RestartDebugging(_mockSession.Object);
 
         result.Should().Be("Debugging restarted.");
     }
@@ -60,10 +60,10 @@ public class SessionToolsTests
     [Fact]
     public async Task EditAndContinue_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.ApplyCodeChangesAsync())
+        _mockSession.Setup(d => d.ApplyCodeChangesAsync())
             .ReturnsAsync("Edit and Continue: code changes applied successfully.");
 
-        var result = await SessionTools.EditAndContinue(null!, _mockDebugger.Object);
+        var result = await SessionTools.EditAndContinue(null!, _mockSession.Object);
 
         result.Should().Contain("code changes applied");
     }
@@ -71,7 +71,7 @@ public class SessionToolsTests
     [Fact]
     public async Task GetDebugState_ShouldReturnFormattedState()
     {
-        _mockDebugger.Setup(d => d.GetDebugStateAsync())
+        _mockSession.Setup(d => d.GetDebugStateAsync())
             .ReturnsAsync(new DebugState
             {
                 IsDebugging = true,
@@ -83,7 +83,7 @@ public class SessionToolsTests
                 CurrentLine = 10
             });
 
-        var result = await SessionTools.GetDebugState(_mockDebugger.Object);
+        var result = await SessionTools.GetDebugState(_mockSession.Object);
 
         result.Should().Contain("Mode: Break");
         result.Should().Contain("Breakpoints: 3");

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using VsDebugMcp.Debugger;
 using VsDebugMcp.Interop;
 using Xunit;
@@ -11,13 +12,17 @@ public class VsIntegrationTests : IDisposable
 {
     private readonly ComThread _comThread;
     private readonly DteConnector _connector;
-    private readonly VsDebuggerService _debugger;
+    private readonly SessionDebugService _sessionService;
+    private readonly BreakpointDebugService _breakpointService;
 
     public VsIntegrationTests()
     {
-        _comThread = new ComThread();
-        _connector = new DteConnector(_comThread);
-        _debugger = new VsDebuggerService(_connector, NullLogger<VsDebuggerService>.Instance);
+        var options = Options.Create(new DebuggerOptions());
+        _comThread = new ComThread(NullLogger<ComThread>.Instance, options);
+        var rotHelper = new RotHelper();
+        _connector = new DteConnector(_comThread, rotHelper, NullLogger<DteConnector>.Instance);
+        _sessionService = new SessionDebugService(_connector, NullLogger<SessionDebugService>.Instance, options);
+        _breakpointService = new BreakpointDebugService(_connector, NullLogger<BreakpointDebugService>.Instance);
     }
 
     [Fact]
@@ -31,7 +36,7 @@ public class VsIntegrationTests : IDisposable
     public async Task GetDebugState_WhenNotDebugging_ShouldReturnDesignMode()
     {
         await _connector.ConnectAsync();
-        var state = await _debugger.GetDebugStateAsync();
+        var state = await _sessionService.GetDebugStateAsync();
 
         state.Mode.Should().Be("Design");
         state.IsDebugging.Should().BeFalse();
@@ -41,7 +46,7 @@ public class VsIntegrationTests : IDisposable
     public async Task ListBreakpoints_ShouldReturnString()
     {
         await _connector.ConnectAsync();
-        var result = await _debugger.ListBreakpointsAsync();
+        var result = await _breakpointService.ListBreakpointsAsync();
 
         result.Should().NotBeNull();
     }
@@ -52,10 +57,10 @@ public class VsIntegrationTests : IDisposable
         await _connector.ConnectAsync();
 
         // Clear existing breakpoints
-        await _debugger.ClearAllBreakpointsAsync();
+        await _breakpointService.ClearAllBreakpointsAsync();
 
         // Get initial state
-        var state = await _debugger.GetDebugStateAsync();
+        var state = await _sessionService.GetDebugStateAsync();
         state.Mode.Should().Be("Design");
 
         // Note: Full workflow test requires a solution to be open

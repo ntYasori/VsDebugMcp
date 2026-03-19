@@ -14,7 +14,7 @@ public sealed class SessionTools
     [McpServerTool(Name = "start_debugging"), Description("Start debugging the current project in Visual Studio. Optionally specify a build configuration (e.g. 'Debug', 'Release'). If no configuration is specified and the client supports elicitation, you will be prompted to choose one.")]
     public static async Task<string> StartDebugging(
         McpServer server,
-        IVsDebuggerService debugger,
+        ISessionDebugService session,
         [Description("Build configuration name (e.g. 'Debug', 'Release'). If omitted, may prompt for selection.")] string? configuration = null,
         CancellationToken cancellationToken = default)
     {
@@ -22,7 +22,7 @@ public sealed class SessionTools
         {
             try
             {
-                var configNames = await debugger.GetConfigurationNamesAsync();
+                var configNames = await session.GetConfigurationNamesAsync();
                 if (configNames.Length > 1)
                 {
                     var oneOf = configNames.Select(name =>
@@ -51,25 +51,25 @@ public sealed class SessionTools
             catch { /* Elicitation not available, continue with default */ }
         }
 
-        return await debugger.StartDebuggingAsync(configuration);
+        return await session.StartDebuggingAsync(configuration);
     }
 
     [McpServerTool(Name = "stop_debugging"), Description("Stop the current debugging session in Visual Studio.")]
-    public static async Task<string> StopDebugging(IVsDebuggerService debugger)
+    public static async Task<string> StopDebugging(ISessionDebugService session)
     {
-        return await debugger.StopDebuggingAsync();
+        return await session.StopDebuggingAsync();
     }
 
     [McpServerTool(Name = "restart_debugging"), Description("Restart the current debugging session (stop and start again).")]
-    public static async Task<string> RestartDebugging(IVsDebuggerService debugger)
+    public static async Task<string> RestartDebugging(ISessionDebugService session)
     {
-        return await debugger.RestartDebuggingAsync();
+        return await session.RestartDebuggingAsync();
     }
 
     [McpServerTool(Name = "edit_and_continue"), Description("Apply code changes while debugging (Edit and Continue). Allows modifying code during a debug session without restarting. The debugger must be in break mode. Not all changes are supported (e.g. adding new classes or changing method signatures may require restart).")]
     public static async Task<string> EditAndContinue(
         McpServer server,
-        IVsDebuggerService debugger,
+        ISessionDebugService session,
         CancellationToken cancellationToken = default)
     {
         if (server?.ClientCapabilities?.Elicitation is not null)
@@ -98,13 +98,13 @@ public sealed class SessionTools
             catch { /* Elicitation not available, proceed */ }
         }
 
-        return await debugger.ApplyCodeChangesAsync();
+        return await session.ApplyCodeChangesAsync();
     }
 
     [McpServerTool(Name = "get_debug_state"), Description("Get the current state of the debugger, including mode (Design/Run/Break), current file, line, function, solution name, and breakpoint count. Use this to check if debugging is active and what state the debugger is in before performing operations.")]
-    public static async Task<string> GetDebugState(IVsDebuggerService debugger)
+    public static async Task<string> GetDebugState(ISessionDebugService session)
     {
-        var state = await debugger.GetDebugStateAsync();
+        var state = await session.GetDebugStateAsync();
         var sb = new StringBuilder();
         sb.AppendLine($"Mode: {state.Mode}");
         sb.AppendLine($"IsDebugging: {state.IsDebugging}");
@@ -123,9 +123,9 @@ public sealed class SessionTools
     }
 
     [McpServerTool(Name = "list_configurations"), Description("List all available build configurations for the current solution (e.g. Debug, Release). Shows which configuration is currently active.")]
-    public static async Task<string> ListConfigurations(IVsDebuggerService debugger)
+    public static async Task<string> ListConfigurations(ISessionDebugService session)
     {
-        return await debugger.ListConfigurationsAsync();
+        return await session.ListConfigurationsAsync();
     }
 
     [McpServerTool(Name = "list_vs_instances"), Description("List all running Visual Studio instances with their PID, version, solution name, and connection status. Use this to discover available VS instances before switching.")]

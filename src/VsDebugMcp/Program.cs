@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using VsDebugMcp;
 using VsDebugMcp.Debugger;
 using VsDebugMcp.Interop;
@@ -18,13 +19,36 @@ for (int i = 0; i < args.Length - 1; i++)
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// Register configurable options (overridable via env vars)
+builder.Services.Configure<DebuggerOptions>(opts =>
+{
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_EXPRESSION_TIMEOUT_MS"), out var et))
+        opts.ExpressionTimeoutMs = et;
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_COM_TIMEOUT_MS"), out var ct))
+        opts.ComOperationTimeoutMs = ct;
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_MAX_VARIABLE_DEPTH"), out var md))
+        opts.MaxVariableDepth = md;
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_MAX_OUTPUT_LINES"), out var ml))
+        opts.MaxOutputLines = ml;
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_RESTART_DELAY_MS"), out var rd))
+        opts.RestartDelayMs = rd;
+});
+
 // Register core services
+builder.Services.AddSingleton<IRotHelper, RotHelper>();
 builder.Services.AddSingleton<ComThread>();
-builder.Services.AddSingleton(sp => new DteConnector(sp.GetRequiredService<ComThread>(), vsPid));
-builder.Services.AddSingleton<IVsDebuggerService>(sp =>
-    new VsDebuggerService(
-        sp.GetRequiredService<DteConnector>(),
-        sp.GetRequiredService<ILogger<VsDebuggerService>>()));
+builder.Services.AddSingleton(sp =>
+    new DteConnector(
+        sp.GetRequiredService<ComThread>(),
+        sp.GetRequiredService<IRotHelper>(),
+        sp.GetRequiredService<ILogger<DteConnector>>(),
+        vsPid));
+
+// Register debug services
+builder.Services.AddSingleton<ISessionDebugService, SessionDebugService>();
+builder.Services.AddSingleton<IBreakpointDebugService, BreakpointDebugService>();
+builder.Services.AddSingleton<IExecutionDebugService, ExecutionDebugService>();
+builder.Services.AddSingleton<IInspectionDebugService, InspectionDebugService>();
 
 // Configure MCP server with stdio transport
 builder.Services

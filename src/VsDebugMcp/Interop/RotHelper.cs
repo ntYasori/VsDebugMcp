@@ -4,14 +4,14 @@ using System.Text.RegularExpressions;
 
 namespace VsDebugMcp.Interop;
 
-internal sealed record DteInstance(object DteObject, string Version, int ProcessId);
+public sealed record DteInstance(object DteObject, string Version, int ProcessId);
 
-internal static partial class RotHelper
+public sealed partial class RotHelper : IRotHelper
 {
     [GeneratedRegex(@"!VisualStudio\.DTE\.(\d+\.\d+):(\d+)")]
     private static partial Regex DteMonikerPattern();
 
-    internal static List<DteInstance> GetRunningDteInstances()
+    public List<DteInstance> GetRunningDteInstances()
     {
         var instances = new List<DteInstance>();
 
@@ -47,19 +47,14 @@ internal static partial class RotHelper
         return instances;
     }
 
-    internal static object? GetDteByPid(int pid)
+    public object? GetDteByPid(int pid)
     {
         return GetRunningDteInstances()
             .FirstOrDefault(i => i.ProcessId == pid)
             ?.DteObject;
     }
 
-    internal static object? GetFirstDte()
-    {
-        return GetFirstDteInstance()?.DteObject;
-    }
-
-    internal static DteInstance? GetFirstDteInstance()
+    public DteInstance? GetFirstDteInstance()
     {
         return GetRunningDteInstances()
             .OrderByDescending(i => i.Version) // Prefer newest VS

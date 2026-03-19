@@ -8,15 +8,15 @@ namespace VsDebugMcp.UnitTests;
 
 public class InspectionToolsTests
 {
-    private readonly Mock<IVsDebuggerService> _mockDebugger = new();
+    private readonly Mock<IInspectionDebugService> _mockInspection = new();
 
     [Fact]
     public async Task GetVariablesValues_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.GetVariablesAsync(null))
+        _mockInspection.Setup(d => d.GetVariablesAsync(null))
             .ReturnsAsync("**Locals:**\n- x = 42 (int)");
 
-        var result = await InspectionTools.GetVariablesValues(_mockDebugger.Object);
+        var result = await InspectionTools.GetVariablesValues(_mockInspection.Object);
 
         result.Should().Contain("x = 42");
     }
@@ -24,10 +24,10 @@ public class InspectionToolsTests
     [Fact]
     public async Task GetVariablesValues_WithDepth_ShouldPassDepth()
     {
-        _mockDebugger.Setup(d => d.GetVariablesAsync(2))
+        _mockInspection.Setup(d => d.GetVariablesAsync(2))
             .ReturnsAsync("**Locals:**\n- obj = {...} (MyClass)\n  - Name = \"test\" (string)");
 
-        var result = await InspectionTools.GetVariablesValues(_mockDebugger.Object, 2);
+        var result = await InspectionTools.GetVariablesValues(_mockInspection.Object, 2);
 
         result.Should().Contain("Name = \"test\"");
     }
@@ -35,10 +35,10 @@ public class InspectionToolsTests
     [Fact]
     public async Task EvaluateExpression_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.EvaluateExpressionAsync("x + y"))
+        _mockInspection.Setup(d => d.EvaluateExpressionAsync("x + y"))
             .ReturnsAsync("x + y = 15 (int)");
 
-        var result = await InspectionTools.EvaluateExpression(_mockDebugger.Object, "x + y");
+        var result = await InspectionTools.EvaluateExpression(_mockInspection.Object, "x + y");
 
         result.Should().Contain("x + y = 15");
     }
@@ -46,10 +46,10 @@ public class InspectionToolsTests
     [Fact]
     public async Task GetCallStack_ShouldCallService()
     {
-        _mockDebugger.Setup(d => d.GetCallStackAsync())
+        _mockInspection.Setup(d => d.GetCallStackAsync())
             .ReturnsAsync("Call Stack (2 frames):\n  #0  MyClass.MyMethod() - MyApp.dll, line 42\n  #1  Program.Main(string[]) - MyApp.dll, line 10");
 
-        var result = await InspectionTools.GetCallStack(_mockDebugger.Object);
+        var result = await InspectionTools.GetCallStack(_mockInspection.Object);
 
         result.Should().Contain("Call Stack (2 frames)");
         result.Should().Contain("MyClass.MyMethod()");
