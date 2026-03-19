@@ -90,4 +90,34 @@ public sealed class InspectionTools
     {
         return await inspection.ListWatchesAsync();
     }
+
+    [McpServerTool(Name = "get_loaded_modules"), Description("List all loaded modules (DLLs/assemblies) in the current debug process. Shows name, path, and load order. Useful for diagnosing assembly version issues.")]
+    public static async Task<string> GetLoadedModules(
+        IInspectionDebugService inspection,
+        [Description("Optional filter to search modules by name or path.")] string? filter = null)
+    {
+        return await inspection.GetLoadedModulesAsync(filter);
+    }
+
+    [McpServerTool(Name = "search_variables"), Description("Search through all local variables and arguments for values matching a pattern. Recursively searches object properties up to a configurable depth.")]
+    public static async Task<string> SearchVariables(
+        IInspectionDebugService inspection,
+        [Description("Regex pattern to match variable names (e.g. 'count', 'item\\.Name').")] string? namePattern = null,
+        [Description("Regex pattern to match variable values (e.g. 'null', 'Error', '42').")] string? valuePattern = null,
+        [Description("Maximum depth for searching nested objects (default: 3, max: 5).")] int maxDepth = 3)
+    {
+        return await inspection.SearchVariablesAsync(namePattern, valuePattern, maxDepth);
+    }
+
+    [McpServerTool(Name = "get_autos"), Description("Get automatically relevant variables — all locals in the current frame plus the return value of the last function call (if available). Similar to the Autos window in Visual Studio.")]
+    public static async Task<string> GetAutos(IInspectionDebugService inspection)
+    {
+        return await inspection.GetAutosAsync();
+    }
+
+    [McpServerTool(Name = "get_return_value"), Description("Get the return value of the last executed function call. Use after stepping over or out of a function. Shows the $ReturnValue pseudo-variable.")]
+    public static async Task<string> GetReturnValue(IInspectionDebugService inspection)
+    {
+        return await inspection.GetReturnValueAsync();
+    }
 }

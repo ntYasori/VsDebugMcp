@@ -54,4 +54,48 @@ public class InspectionToolsTests
         result.Should().Contain("Call Stack (2 frames)");
         result.Should().Contain("MyClass.MyMethod()");
     }
+
+    [Fact]
+    public async Task GetLoadedModules_ShouldCallService()
+    {
+        _mockInspection.Setup(d => d.GetLoadedModulesAsync(null))
+            .ReturnsAsync("3 module(s):\n  MyApp.dll\n    Path: C:\\bin\\MyApp.dll");
+
+        var result = await InspectionTools.GetLoadedModules(_mockInspection.Object);
+
+        result.Should().Contain("module(s)");
+    }
+
+    [Fact]
+    public async Task SearchVariables_ShouldCallService()
+    {
+        _mockInspection.Setup(d => d.SearchVariablesAsync("count", null, 3))
+            .ReturnsAsync("1 match(es):\n  itemCount = 42 (int)");
+
+        var result = await InspectionTools.SearchVariables(_mockInspection.Object, namePattern: "count");
+
+        result.Should().Contain("match(es)");
+    }
+
+    [Fact]
+    public async Task GetAutos_ShouldCallService()
+    {
+        _mockInspection.Setup(d => d.GetAutosAsync())
+            .ReturnsAsync("**Locals (current frame):**\n  x = 42 (int)");
+
+        var result = await InspectionTools.GetAutos(_mockInspection.Object);
+
+        result.Should().Contain("Locals");
+    }
+
+    [Fact]
+    public async Task GetReturnValue_ShouldCallService()
+    {
+        _mockInspection.Setup(d => d.GetReturnValueAsync())
+            .ReturnsAsync("$ReturnValue = 42 (int)");
+
+        var result = await InspectionTools.GetReturnValue(_mockInspection.Object);
+
+        result.Should().Contain("$ReturnValue");
+    }
 }

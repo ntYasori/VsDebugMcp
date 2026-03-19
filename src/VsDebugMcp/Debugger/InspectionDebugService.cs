@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.Extensions.Logging;
@@ -358,5 +359,156 @@ public sealed class InspectionDebugService : IInspectionDebugService
             }
             return resultSb.ToString().TrimEnd();
         });
+    }
+
+    // ── Advanced inspection ─────────────────────────────────────
+
+    public async Task<string> GetLoadedModulesAsync(string? filter = null)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            var check = DebuggerHelpers.RequireBreakMode(dte, "get loaded modules");
+            if (check is not null) return check;
+
+            try
+            {
+                dynamic process = dte.Debugger.CurrentProcess;
+                if (process is null)
+                    return "No current process available.";
+
+                var sb = new StringBuilder();
+                int count = 0;
+
+                foreach (dynamic module in process.Modules)
+                {
+                    string name;
+                    string path;
+                    try
+                    {
+                        name = module.Name;
+                        path = module.Path;
+                    }
+                    catch { continue; }
+
+                    if (filter is not null &&
+                        !name.Contains(filter, StringComparison.OrdinalIgnoreCase) &&
+                        !path.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    count++;
+                    sb.AppendLine($"  {name}");
+                    sb.AppendLine($"    Path: {path}");
+
+                    try { sb.AppendLine($"    Order: {module.Order}"); } catch { }
+                }
+
+                return count == 0
+                    ? (filter is not null ? $"No modules matching '{filter}'." : "No modules loaded.")
+                    : $"{count} module(s){(filter is not null ? $" matching '{filter}'" : "")}:\n{sb.ToString().TrimEnd()}";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to get loaded modules: {ex.Message}";
+            }
+        });
+    }
+
+    public async Task<string> SearchVariablesAsync(string? namePattern = null, string? valuePattern = null, int maxDepth = 3)
+    {
+        if (namePattern is null && valuePattern is null)
+            return "Either 'namePattern' or 'valuePattern' must be provided.";
+
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            var check = DebuggerHelpers.RequireBreakMode(dte, "search variables");
+            if (check is not null) return check;
+
+            var frame = dte.Debugger.CurrentStackFrame;
+            if (frame is null)
+                return "No current stack frame available.";
+
+            var sb = new StringBuilder();
+            var nameRegex = namePattern is not null ? new Regex(namePattern, RegexOptions.IgnoreCase) : null;
+            var valueRegex = valuePattern is not null ? new Regex(valuePattern, RegexOptions.IgnoreCase) : null;
+            int matches = 0;
+            var safeMaxDepth = Math.Min(maxDepth, _options.MaxVariableDepth);
+
+            SearchExpressions(frame.Locals, sb, nameRegex, valueRegex, "", safeMaxDepth, 0, ref matches);
+            SearchExpressions(frame.Arguments, sb, nameRegex, valueRegex, "", safeMaxDepth, 0, ref matches);
+
+            return matches == 0
+                ? "No matching variables found."
+                : $"{matches} match(es):\n{sb.ToString().TrimEnd()}";
+        });
+    }
+
+    public async Task<string> GetAutosAsync()
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            var check = DebuggerHelpers.RequireBreakMode(dte, "get autos");
+            if (check is not null) return check;
+
+            var frame = dte.Debugger.CurrentStackFrame;
+            if (frame is null)
+                return "No current stack frame available.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine("**Locals (current frame):**");
+            foreach (Expression expr in frame.Locals)
+            {
+                sb.AppendLine($"  {expr.Name} = {expr.Value} ({expr.Type})");
+            }
+
+            // Try to get $ReturnValue
+            var retResult = dte.Debugger.GetExpression("$ReturnValue", false, _options.ExpressionTimeoutMs);
+            if (retResult.IsValidValue && retResult.Value != "undefined")
+            {
+                sb.AppendLine($"\n**Return Value:**");
+                sb.AppendLine($"  $ReturnValue = {retResult.Value} ({retResult.Type})");
+            }
+
+            return sb.ToString().TrimEnd();
+        });
+    }
+
+    public async Task<string> GetReturnValueAsync()
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            var check = DebuggerHelpers.RequireBreakMode(dte, "get return value");
+            if (check is not null) return check;
+
+            var result = dte.Debugger.GetExpression("$ReturnValue", false, _options.ExpressionTimeoutMs);
+            if (!result.IsValidValue)
+                return "No return value available. Use this after stepping over or out of a function call.";
+
+            return $"$ReturnValue = {result.Value} ({result.Type})";
+        });
+    }
+
+    private static void SearchExpressions(
+        Expressions expressions, StringBuilder sb,
+        Regex? nameRegex, Regex? valueRegex,
+        string prefix, int maxDepth, int currentDepth, ref int matches)
+    {
+        foreach (Expression expr in expressions)
+        {
+            var fullName = string.IsNullOrEmpty(prefix) ? expr.Name : $"{prefix}.{expr.Name}";
+            var nameMatch = nameRegex is null || nameRegex.IsMatch(fullName);
+            var valueMatch = valueRegex is null || valueRegex.IsMatch(expr.Value);
+
+            if (nameMatch && valueMatch)
+            {
+                sb.AppendLine($"  {fullName} = {expr.Value} ({expr.Type})");
+                matches++;
+            }
+
+            if (currentDepth < maxDepth && expr.DataMembers.Count > 0)
+            {
+                SearchExpressions(expr.DataMembers, sb, nameRegex, valueRegex,
+                    fullName, maxDepth, currentDepth + 1, ref matches);
+            }
+        }
     }
 }
