@@ -8,6 +8,7 @@ public sealed class DteConnector
     private readonly int? _targetPid;
     private object? _dte;
     private bool _isConnected;
+    private int? _connectedPid;
 
     public DteConnector(ComThread comThread, int? targetPid = null)
     {
@@ -16,33 +17,84 @@ public sealed class DteConnector
     }
 
     public bool IsConnected => _isConnected;
+    public int? ConnectedProcessId => _connectedPid;
 
     public async Task ConnectAsync()
     {
-        _dte = await _comThread.RunAsync(() =>
+        (object dte, int pid) = await _comThread.RunAsync(() =>
         {
-            object? dte = _targetPid.HasValue
-                ? RotHelper.GetDteByPid(_targetPid.Value)
-                : RotHelper.GetFirstDte();
-
-            if (dte is null)
+            if (_targetPid.HasValue)
             {
-                var message = _targetPid.HasValue
-                    ? $"Could not find Visual Studio instance with PID {_targetPid.Value}. " +
-                      "Make sure Visual Studio is running and a solution is open."
-                    : "Could not find any running Visual Studio instance. " +
-                      "Make sure Visual Studio is running and a solution is open.";
-                throw new InvalidOperationException(message);
+                var obj = RotHelper.GetDteByPid(_targetPid.Value);
+                if (obj is null)
+                    throw new InvalidOperationException(
+                        $"Could not find Visual Studio instance with PID {_targetPid.Value}. " +
+                        "Make sure Visual Studio is running and a solution is open.");
+                var dteCast = (EnvDTE.DTE)obj;
+                _ = dteCast.Version;
+                return (obj, _targetPid.Value);
             }
-
-            // Verify the connection works by accessing a property
-            var dteCast = (EnvDTE.DTE)dte;
-            _ = dteCast.Version;
-
-            return dte;
+            else
+            {
+                var instance = RotHelper.GetFirstDteInstance();
+                if (instance is null)
+                    throw new InvalidOperationException(
+                        "Could not find any running Visual Studio instance. " +
+                        "Make sure Visual Studio is running and a solution is open.");
+                var dteCast = (EnvDTE.DTE)instance.DteObject;
+                _ = dteCast.Version;
+                return (instance.DteObject, instance.ProcessId);
+            }
         });
 
+        _dte = dte;
+        _connectedPid = pid;
         _isConnected = true;
+    }
+
+    public async Task SwitchAsync(int pid)
+    {
+        _dte = await _comThread.RunAsync(() =>
+        {
+            var dte = RotHelper.GetDteByPid(pid);
+            if (dte is null)
+                throw new InvalidOperationException(
+                    $"Could not find Visual Studio instance with PID {pid}. " +
+                    "Make sure Visual Studio is running and a solution is open.");
+            var dteCast = (EnvDTE.DTE)dte;
+            _ = dteCast.Version;
+            return dte;
+        });
+        _connectedPid = pid;
+        _isConnected = true;
+    }
+
+    public async Task<List<VsInstanceInfo>> ListInstancesAsync()
+    {
+        return await _comThread.RunAsync(() =>
+        {
+            var instances = RotHelper.GetRunningDteInstances();
+            return instances.Select(i =>
+            {
+                string? solutionName = null;
+                string? windowTitle = null;
+                try
+                {
+                    var dte = (EnvDTE.DTE)i.DteObject;
+                    var slnPath = dte.Solution?.FullName;
+                    solutionName = string.IsNullOrEmpty(slnPath)
+                        ? null
+                        : Path.GetFileNameWithoutExtension(slnPath);
+                    windowTitle = dte.MainWindow?.Caption;
+                }
+                catch { /* VS may be busy or showing a modal dialog */ }
+
+                return new VsInstanceInfo(
+                    i.ProcessId, i.Version,
+                    solutionName, windowTitle,
+                    i.ProcessId == _connectedPid);
+            }).ToList();
+        });
     }
 
     public async Task EnsureConnectedAsync()

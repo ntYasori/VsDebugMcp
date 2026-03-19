@@ -56,9 +56,13 @@ internal static partial class RotHelper
 
     internal static object? GetFirstDte()
     {
+        return GetFirstDteInstance()?.DteObject;
+    }
+
+    internal static DteInstance? GetFirstDteInstance()
+    {
         return GetRunningDteInstances()
             .OrderByDescending(i => i.Version) // Prefer newest VS
-            .FirstOrDefault()
-            ?.DteObject;
+            .FirstOrDefault();
     }
 }

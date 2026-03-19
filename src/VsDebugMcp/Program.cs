@@ -38,8 +38,17 @@ builder.Services
 
 var app = builder.Build();
 
-// Ensure COM connection is established
+// Try to establish COM connection; if no VS is running, start anyway
+// so the user can connect later via list_vs_instances + switch_vs_instance
 var connector = app.Services.GetRequiredService<DteConnector>();
-await connector.ConnectAsync();
+try
+{
+    await connector.ConnectAsync();
+}
+catch (InvalidOperationException)
+{
+    // VS not running or not accessible — MCP server starts anyway.
+    // Tools will report connection errors; user can switch/connect later.
+}
 
 await app.RunAsync();

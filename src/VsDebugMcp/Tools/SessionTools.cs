@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using VsDebugMcp.Debugger;
+using VsDebugMcp.Interop;
 
 namespace VsDebugMcp.Tools;
 
@@ -125,5 +126,102 @@ public sealed class SessionTools
     public static async Task<string> ListConfigurations(IVsDebuggerService debugger)
     {
         return await debugger.ListConfigurationsAsync();
+    }
+
+    [McpServerTool(Name = "list_vs_instances"), Description("List all running Visual Studio instances with their PID, version, solution name, and connection status. Use this to discover available VS instances before switching.")]
+    public static async Task<string> ListVsInstances(DteConnector connector)
+    {
+        var instances = await connector.ListInstancesAsync();
+        if (instances.Count == 0)
+            return "No running Visual Studio instances found.";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Found {instances.Count} Visual Studio instance(s):");
+        sb.AppendLine();
+        foreach (var inst in instances)
+        {
+            var current = inst.IsCurrent ? " (connected)" : "";
+            sb.AppendLine($"  PID: {inst.ProcessId}{current}");
+            sb.AppendLine($"  Version: {inst.Version}");
+            if (inst.SolutionName is not null)
+                sb.AppendLine($"  Solution: {inst.SolutionName}");
+            if (inst.WindowTitle is not null)
+                sb.AppendLine($"  Window: {inst.WindowTitle}");
+            sb.AppendLine();
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    [McpServerTool(Name = "switch_vs_instance"), Description("Switch to a different running Visual Studio instance. If PID is omitted and the client supports elicitation, presents a selection dialog. Use list_vs_instances first to see available instances.")]
+    public static async Task<string> SwitchVsInstance(
+        McpServer server,
+        DteConnector connector,
+        [Description("Process ID of the target Visual Studio instance. Use list_vs_instances to find PIDs. If omitted, shows a selection dialog.")] int? pid = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (pid is null)
+        {
+            var instances = await connector.ListInstancesAsync();
+            if (instances.Count == 0)
+                return "No running Visual Studio instances found.";
+            if (instances.Count == 1)
+            {
+                pid = instances[0].ProcessId;
+            }
+            else if (server?.ClientCapabilities?.Elicitation is not null)
+            {
+                try
+                {
+                    var options = instances.Select(i =>
+                    {
+                        var label = i.SolutionName ?? $"PID {i.ProcessId}";
+                        if (i.IsCurrent) label += " (current)";
+                        return new ElicitRequestParams.EnumSchemaOption
+                        {
+                            Const = i.ProcessId.ToString(),
+                            Title = $"{label} \u2014 VS {i.Version} (PID {i.ProcessId})"
+                        };
+                    }).ToArray();
+
+                    var result = await server.ElicitAsync(new ElicitRequestParams
+                    {
+                        Message = "Select the Visual Studio instance to connect to:",
+                        RequestedSchema = new ElicitRequestParams.RequestSchema
+                        {
+                            Properties = new Dictionary<string, ElicitRequestParams.PrimitiveSchemaDefinition>
+                            {
+                                ["instance"] = new ElicitRequestParams.TitledSingleSelectEnumSchema
+                                {
+                                    Description = "Visual Studio instance",
+                                    OneOf = options,
+                                }
+                            }
+                        }
+                    }, cancellationToken);
+
+                    if (result.Action == "accept"
+                        && result.Content?.TryGetValue("instance", out var val) == true
+                        && int.TryParse(val.GetString(), out var selectedPid))
+                    {
+                        pid = selectedPid;
+                    }
+                    else
+                    {
+                        return "Instance selection cancelled.";
+                    }
+                }
+                catch { /* Elicitation not available, fall through */ }
+            }
+
+            if (pid is null)
+                return "Multiple VS instances found. Specify a PID or use a client that supports elicitation.\n\n"
+                     + await ListVsInstances(connector);
+        }
+
+        await connector.SwitchAsync(pid.Value);
+        var info = (await connector.ListInstancesAsync())
+            .FirstOrDefault(i => i.ProcessId == pid.Value);
+        var name = info?.SolutionName ?? $"PID {pid.Value}";
+        return $"Switched to Visual Studio instance: {name} (PID {pid.Value}, VS {info?.Version})";
     }
 }
