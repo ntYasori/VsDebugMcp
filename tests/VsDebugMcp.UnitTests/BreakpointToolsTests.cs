@@ -75,4 +75,40 @@ public class BreakpointToolsTests
 
         result.Should().Contain("disabled");
     }
+
+    [Fact]
+    public async Task AddTracepoint_ShouldCallService()
+    {
+        _mockBreakpoints.Setup(d => d.AddTracepointAsync("test.cs", 10, "x={x}", true))
+            .ReturnsAsync("Tracepoint added at test.cs:10 — logs without breaking.\n  Message: x={x}");
+
+        var result = await BreakpointTools.AddTracepoint(_mockBreakpoints.Object, "test.cs", 10, "x={x}");
+
+        result.Should().Contain("Tracepoint");
+        result.Should().Contain("x={x}");
+    }
+
+    [Fact]
+    public async Task SetHitCountBreakpoint_ShouldCallService()
+    {
+        _mockBreakpoints.Setup(d => d.SetHitCountBreakpointAsync("test.cs", 20, 100, "equal"))
+            .ReturnsAsync("Hit count breakpoint added at test.cs:20 — breaks when hit count is equal 100.");
+
+        var result = await BreakpointTools.SetHitCountBreakpoint(_mockBreakpoints.Object, "test.cs", 20, 100, "equal");
+
+        result.Should().Contain("Hit count");
+        result.Should().Contain("100");
+    }
+
+    [Fact]
+    public async Task AddDataBreakpoint_ShouldCallService()
+    {
+        _mockBreakpoints.Setup(d => d.AddDataBreakpointAsync("myVar.Count"))
+            .ReturnsAsync("Data breakpoint set for 'myVar.Count'.");
+
+        var result = await BreakpointTools.AddDataBreakpoint(_mockBreakpoints.Object, "myVar.Count");
+
+        result.Should().Contain("Data breakpoint");
+        result.Should().Contain("myVar.Count");
+    }
 }

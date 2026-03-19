@@ -140,4 +140,85 @@ public sealed class BreakpointDebugService : IBreakpointDebugService
             return $"No breakpoint found at {filePath}:{line}.";
         });
     }
+
+    // ── Advanced breakpoints ─────────────────────────────────────
+
+    public async Task<string> AddTracepointAsync(string filePath, int line, string message, bool continueExecution = true)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            try
+            {
+                var bps = dte.Debugger.Breakpoints.Add(File: filePath, Line: line);
+                if (bps.Count == 0)
+                    return $"Failed to create tracepoint at {filePath}:{line}.";
+
+                dynamic bp = bps.Item(1);
+                bp.Message = message;
+                bp.BreakWhenHit = !continueExecution;
+
+                var action = continueExecution ? "logs without breaking" : "logs and breaks";
+                return $"Tracepoint added at {filePath}:{line} — {action}.\n  Message: {message}";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to add tracepoint: {ex.Message}";
+            }
+        });
+    }
+
+    public async Task<string> SetHitCountBreakpointAsync(string filePath, int line, int hitCount, string hitCountType)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            try
+            {
+                var bps = dte.Debugger.Breakpoints.Add(File: filePath, Line: line);
+                if (bps.Count == 0)
+                    return $"Failed to create breakpoint at {filePath}:{line}.";
+
+                dynamic bp = bps.Item(1);
+
+                // EnvDTE80 dbgHitCountType values: 1=Equal, 2=GreaterOrEqual, 3=Multiple
+                int hitCountTypeValue = hitCountType.ToLowerInvariant() switch
+                {
+                    "equal" => 1,
+                    "greaterorequal" => 2,
+                    "multiple" => 3,
+                    _ => throw new ArgumentException($"Invalid hitCountType: '{hitCountType}'. Use 'equal', 'greaterOrEqual', or 'multiple'.")
+                };
+
+                bp.HitCountType = hitCountTypeValue;
+                bp.HitCountTarget = hitCount;
+
+                return $"Hit count breakpoint added at {filePath}:{line} — breaks when hit count is {hitCountType} {hitCount}.";
+            }
+            catch (ArgumentException ex)
+            {
+                return ex.Message;
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to set hit count breakpoint: {ex.Message}";
+            }
+        });
+    }
+
+    public async Task<string> AddDataBreakpointAsync(string expression)
+    {
+        return await _connector.ExecuteOnDteAsync(dte =>
+        {
+            try
+            {
+                dte.ExecuteCommand("Debug.NewDataBreakpoint", expression);
+                return $"Data breakpoint set for '{expression}'.\n" +
+                       "Note: Data breakpoints are supported in C++ native code and .NET Core 3.0+ for certain scenarios.";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to add data breakpoint for '{expression}': {ex.Message}. " +
+                       "Data breakpoints may not be supported for this debug target.";
+            }
+        });
+    }
 }

@@ -85,4 +85,34 @@ public sealed class BreakpointTools
     {
         return await breakpoints.ListBreakpointsAsync();
     }
+
+    [McpServerTool(Name = "add_tracepoint"), Description("Add a tracepoint (logging breakpoint) that outputs a message when hit. By default continues execution without breaking. Supports placeholders like {variableName}, $CALLER, $CALLSTACK, $FUNCTION in the message.")]
+    public static async Task<string> AddTracepoint(
+        IBreakpointDebugService breakpoints,
+        [Description("Full path to the source file.")] string filePath,
+        [Description("Line number (1-based) where the tracepoint should be set.")] int line,
+        [Description("Message to log when the tracepoint is hit. Use {variableName} for variable values, $CALLER for caller info, $CALLSTACK for stack trace, $FUNCTION for current function name.")] string message,
+        [Description("If true (default), execution continues after logging. If false, execution breaks after logging.")] bool continueExecution = true)
+    {
+        return await breakpoints.AddTracepointAsync(filePath, line, message, continueExecution);
+    }
+
+    [McpServerTool(Name = "set_hit_count_breakpoint"), Description("Add a breakpoint that triggers based on hit count. Useful for breaking in loops at a specific iteration or every Nth time.")]
+    public static async Task<string> SetHitCountBreakpoint(
+        IBreakpointDebugService breakpoints,
+        [Description("Full path to the source file.")] string filePath,
+        [Description("Line number (1-based) where the breakpoint should be set.")] int line,
+        [Description("The hit count target value.")] int hitCount,
+        [Description("How to compare: 'equal' (break when count == N), 'greaterOrEqual' (break when count >= N), 'multiple' (break every Nth hit).")] string hitCountType)
+    {
+        return await breakpoints.SetHitCountBreakpointAsync(filePath, line, hitCount, hitCountType);
+    }
+
+    [McpServerTool(Name = "add_data_breakpoint"), Description("Add a data breakpoint that triggers when a variable's value changes. Supported in C++ native code and .NET Core 3.0+ for certain scenarios.")]
+    public static async Task<string> AddDataBreakpoint(
+        IBreakpointDebugService breakpoints,
+        [Description("The expression or variable to monitor for value changes (e.g. 'myObject.Property', '&myVariable').")] string expression)
+    {
+        return await breakpoints.AddDataBreakpointAsync(expression);
+    }
 }

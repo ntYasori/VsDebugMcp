@@ -11,4 +11,9 @@ public interface IBreakpointDebugService
     Task<string> ClearAllBreakpointsAsync();
     Task<string> ListBreakpointsAsync();
     Task<string> ToggleBreakpointAsync(string filePath, int line);
+
+    // Advanced breakpoints
+    Task<string> AddTracepointAsync(string filePath, int line, string message, bool continueExecution = true);
+    Task<string> SetHitCountBreakpointAsync(string filePath, int line, int hitCount, string hitCountType);
+    Task<string> AddDataBreakpointAsync(string expression);
 }
