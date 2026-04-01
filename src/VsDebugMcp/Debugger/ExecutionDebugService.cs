@@ -22,7 +22,7 @@ public sealed class ExecutionDebugService : IExecutionDebugService
             var check = DebuggerHelpers.RequireBreakMode(dte, "step");
             if (check is not null) return check;
 
-            dte.Debugger.StepOver(false);
+            dte.Debugger.StepOver(true);
             return DebuggerHelpers.FormatCurrentLocation(dte);
         });
     }
@@ -34,7 +34,7 @@ public sealed class ExecutionDebugService : IExecutionDebugService
             var check = DebuggerHelpers.RequireBreakMode(dte, "step");
             if (check is not null) return check;
 
-            dte.Debugger.StepInto(false);
+            dte.Debugger.StepInto(true);
             return DebuggerHelpers.FormatCurrentLocation(dte);
         });
     }
@@ -46,7 +46,7 @@ public sealed class ExecutionDebugService : IExecutionDebugService
             var check = DebuggerHelpers.RequireBreakMode(dte, "step");
             if (check is not null) return check;
 
-            dte.Debugger.StepOut(false);
+            dte.Debugger.StepOut(true);
             return DebuggerHelpers.FormatCurrentLocation(dte);
         });
     }
