@@ -149,6 +149,13 @@ public sealed class InspectionDebugService : IInspectionDebugService
                     sb.AppendLine($"File: {doc.FullName}");
                     if (doc.Selection is TextSelection sel)
                         sb.AppendLine($"Line: {sel.CurrentLine}");
+
+                    var snippet = DebuggerHelpers.FormatSourceSnippet(dte, _options.StepContextLines);
+                    if (snippet is not null)
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine(snippet);
+                    }
                 }
             }
             catch (COMException ex)

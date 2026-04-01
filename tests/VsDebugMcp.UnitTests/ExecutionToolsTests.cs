@@ -14,10 +14,11 @@ public class ExecutionToolsTests
     public async Task StepOver_ShouldCallService()
     {
         _mockExecution.Setup(d => d.StepOverAsync())
-            .ReturnsAsync("Now at: file.cs:10");
+            .ReturnsAsync("Stepped to: file.cs:10 in Main\n\n→ 10| var x = 1;\n\nLocals:\n  x = 1 (int)");
 
         var result = await ExecutionTools.StepOver(_mockExecution.Object);
 
+        result.Should().Contain("Stepped to:");
         result.Should().Contain("file.cs:10");
     }
 
@@ -25,10 +26,11 @@ public class ExecutionToolsTests
     public async Task StepInto_ShouldCallService()
     {
         _mockExecution.Setup(d => d.StepIntoAsync())
-            .ReturnsAsync("Now at: file.cs:20");
+            .ReturnsAsync("Stepped to: file.cs:20 in Process\n\n→ 20| var y = 2;\n\nLocals:\n  y = 2 (int)");
 
         var result = await ExecutionTools.StepInto(_mockExecution.Object);
 
+        result.Should().Contain("Stepped to:");
         result.Should().Contain("file.cs:20");
     }
 

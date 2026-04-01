@@ -32,6 +32,10 @@ builder.Services.Configure<DebuggerOptions>(opts =>
         opts.MaxOutputLines = ml;
     if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_RESTART_DELAY_MS"), out var rd))
         opts.RestartDelayMs = rd;
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_STEP_CONTEXT_LINES"), out var sc))
+        opts.StepContextLines = sc;
+    if (int.TryParse(Environment.GetEnvironmentVariable("VSDEBUGMCP_STEP_MAX_LOCALS"), out var sl))
+        opts.StepMaxLocals = sl;
 });
 
 // Register core services

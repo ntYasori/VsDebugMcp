@@ -20,4 +20,10 @@ public class DebuggerOptions
 
     /// <summary>Delay in milliseconds between stop and start during restart debugging.</summary>
     public int RestartDelayMs { get; set; } = 500;
+
+    /// <summary>Number of source lines to show above and below the current line in step responses.</summary>
+    public int StepContextLines { get; set; } = 3;
+
+    /// <summary>Maximum number of local variables to include in step responses (0 to disable).</summary>
+    public int StepMaxLocals { get; set; } = 15;
 }

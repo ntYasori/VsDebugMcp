@@ -1,5 +1,6 @@
 using EnvDTE;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using VsDebugMcp.Interop;
 
 namespace VsDebugMcp.Debugger;
@@ -8,11 +9,13 @@ public sealed class ExecutionDebugService : IExecutionDebugService
 {
     private readonly DteConnector _connector;
     private readonly ILogger<ExecutionDebugService> _logger;
+    private readonly DebuggerOptions _options;
 
-    public ExecutionDebugService(DteConnector connector, ILogger<ExecutionDebugService> logger)
+    public ExecutionDebugService(DteConnector connector, ILogger<ExecutionDebugService> logger, IOptions<DebuggerOptions> options)
     {
         _connector = connector;
         _logger = logger;
+        _options = options.Value;
     }
 
     public async Task<string> StepOverAsync()
@@ -23,7 +26,7 @@ public sealed class ExecutionDebugService : IExecutionDebugService
             if (check is not null) return check;
 
             dte.Debugger.StepOver(true);
-            return DebuggerHelpers.FormatCurrentLocation(dte);
+            return DebuggerHelpers.FormatStepResult(dte, _options);
         });
     }
 
@@ -35,7 +38,7 @@ public sealed class ExecutionDebugService : IExecutionDebugService
             if (check is not null) return check;
 
             dte.Debugger.StepInto(true);
-            return DebuggerHelpers.FormatCurrentLocation(dte);
+            return DebuggerHelpers.FormatStepResult(dte, _options);
         });
     }
 
@@ -47,7 +50,7 @@ public sealed class ExecutionDebugService : IExecutionDebugService
             if (check is not null) return check;
 
             dte.Debugger.StepOut(true);
-            return DebuggerHelpers.FormatCurrentLocation(dte);
+            return DebuggerHelpers.FormatStepResult(dte, _options);
         });
     }
 
