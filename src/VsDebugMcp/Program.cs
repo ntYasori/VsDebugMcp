@@ -18,6 +18,7 @@ for (int i = 0; i < args.Length - 1; i++)
 }
 
 var builder = Host.CreateApplicationBuilder(args);
+builder.Logging.ClearProviders();
 
 // Register configurable options (overridable via env vars)
 builder.Services.Configure<DebuggerOptions>(opts =>
